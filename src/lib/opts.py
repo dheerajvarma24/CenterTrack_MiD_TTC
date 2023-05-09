@@ -245,6 +245,8 @@ class opts(object):
                              help='loss weight for 3d bounding box size.')
     self.parser.add_argument('--rot_weight', type=float, default=1,
                              help='loss weight for orientation.')
+    self.parser.add_argument('--dep_ratio_weight', type=float, default=1,
+                             help='loss weight for depth ratio.')
     self.parser.add_argument('--nuscenes_att', action='store_true')
     self.parser.add_argument('--nuscenes_att_weight', type=float, default=1)
     self.parser.add_argument('--velocity', action='store_true')
@@ -346,7 +348,7 @@ class opts(object):
       opt.heads.update({'tracking': 2})
 
     if 'ddd' in opt.task:
-      opt.heads.update({'dep': 1, 'rot': 8, 'dim': 3, 'amodel_offset': 2})
+      opt.heads.update({'dep': 1, 'rot': 8, 'dim': 3, 'amodel_offset': 2, 'dep_ratio':1})
     
     if 'multi_pose' in opt.task:
       opt.heads.update({
@@ -365,7 +367,7 @@ class opts(object):
     weight_dict = {'hm': opt.hm_weight, 'wh': opt.wh_weight,
                    'reg': opt.off_weight, 'hps': opt.hp_weight,
                    'hm_hp': opt.hm_hp_weight, 'hp_offset': opt.off_weight,
-                   'dep': opt.dep_weight, 'rot': opt.rot_weight,
+                   'dep': opt.dep_weight, 'rot': opt.rot_weight, 'dep_ratio': opt.dep_ratio_weight,
                    'dim': opt.dim_weight,
                    'amodel_offset': opt.amodel_offset_weight,
                    'ltrb': opt.ltrb_weight,

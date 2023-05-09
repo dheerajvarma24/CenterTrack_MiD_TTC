@@ -90,6 +90,8 @@ class trackingEvaluation(object):
              missed         - number of missed targets (FN)
     """
 
+    # TODO kitti track eval data is already present in this folder. 
+    # They are not reading from the split defined in convert_kittitrack_to_coco.py
     def __init__(self, t_sha, gt_path="./tools/eval_kitti_track/data/tracking",\
         split_version='', min_overlap=0.5, max_truncation = 0, min_height = 25, 
         max_occlusion = 2, mail=None, cls="car"):
@@ -271,14 +273,16 @@ class trackingEvaluation(object):
                 t_data.Y            = float(fields[14])         # Y [m]
                 t_data.Z            = float(fields[15])         # Z [m]
                 t_data.yaw          = float(fields[16])         # yaw angle [rad]
-                if not loading_groundtruth:
+
+                # Commented out the validation check as we have additional dep_ratio column.
+                '''if not loading_groundtruth:
                     if len(fields) == 17:
                         t_data.score = -1
                     elif len(fields) == 18:
                         t_data.score  = float(fields[17])     # detection score
                     else:
                         self.mail.msg("file is not in KITTI format")
-                        return
+                        return'''
 
                 # do not consider objects marked as invalid
                 if t_data.track_id is -1 and t_data.obj_type != "dontcare":

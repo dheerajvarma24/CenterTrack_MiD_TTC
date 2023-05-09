@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import torch
 import torch.nn as nn
+import numpy as np
 from .utils import _tranpose_and_gather_feat, _nms, _topk
 import torch.nn.functional as F
 from utils.image import draw_umich_gaussian
@@ -124,6 +125,24 @@ class RegWeightedL1Loss(nn.Module):
     loss = F.l1_loss(pred * mask, target * mask, reduction='sum')
     loss = loss / (mask.sum() + 1e-4)
     return loss
+  
+class WeightedL1Loss(nn.Module):
+  def __init__(self):
+    super(WeightedL1Loss, self).__init__()
+  
+  # For L1Loss the reduction 'sum' is used and to get average loss, we divide it by number of elements (represented by the mask). 
+  # The rest of the elements are equal to zero in both target and pred as we are multiplying with the mask.
+  def forward(self, output, mask, ind, target):
+    pred = _tranpose_and_gather_feat(output, ind)
+    # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
+    detached_target = target.clone().detach().cpu().numpy()
+    nan_mask = np.logical_not(np.isnan(detached_target))
+    nan_mask = torch.from_numpy(nan_mask).cuda()
+    mask = torch.logical_and(mask, nan_mask)
+
+    loss = F.l1_loss(pred * mask, torch.nan_to_num(target) * mask, reduction='sum')
+    loss = loss / (mask.sum() + 1e-4)
+    return loss
 
 
 class WeightedBCELoss(nn.Module):
@@ -151,12 +170,12 @@ class BinRotLoss(nn.Module):
     return loss
 
 def compute_res_loss(output, target):
-    return F.smooth_l1_loss(output, target, reduction='elementwise_mean')
+    return F.smooth_l1_loss(output, target, reduction='mean')
 
 def compute_bin_loss(output, target, mask):
     mask = mask.expand_as(output)
     output = output * mask.float()
-    return F.cross_entropy(output, target, reduction='elementwise_mean')
+    return F.cross_entropy(output, target, reduction='mean')
 
 def compute_rot_loss(output, target_bin, target_res, mask):
     # output: (B, 128, 8) [bin1_cls[0], bin1_cls[1], bin1_sin, bin1_cos, 

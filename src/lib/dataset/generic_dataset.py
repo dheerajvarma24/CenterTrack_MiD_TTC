@@ -339,7 +339,7 @@ class GenericDataset(data.Dataset):
     regression_head_dims = {
       'reg': 2, 'wh': 2, 'tracking': 2, 'ltrb': 4, 'ltrb_amodal': 4, 
       'nuscenes_att': 8, 'velocity': 3, 'hps': self.num_joints * 2, 
-      'dep': 1, 'dim': 3, 'amodel_offset': 2}
+      'dep': 1, 'dep_ratio': 1, 'dim': 3, 'amodel_offset': 2}
 
     for head in regression_head_dims:
       if head in self.opt.heads:
@@ -495,6 +495,15 @@ class GenericDataset(data.Dataset):
         gt_det['dep'].append(ret['dep'][k])
       else:
         gt_det['dep'].append(2)
+    
+    if 'dep_ratio' in self.opt.heads:
+      if 'dep_ratio' in ann:
+        ret['dep_ratio_mask'][k] = 1
+        ret['dep_ratio'][k] = ann['dep_ratio']
+        gt_det['dep_ratio'].append(ret['dep_ratio'][k])
+      else:
+        #gt_det['dep_ratio'].append(1)
+        gt_det['dep_ratio'].append(np.nan)
 
     if 'dim' in self.opt.heads:
       if 'dim' in ann:
@@ -584,6 +593,7 @@ class GenericDataset(data.Dataset):
       gt_det = {'bboxes': np.array([[0,0,1,1]], dtype=np.float32), 
                 'scores': np.array([1], dtype=np.float32), 
                 'clses': np.array([0], dtype=np.float32),
+                'dep_ratio': np.array([1], dtype=np.float32),
                 'cts': np.array([[0, 0]], dtype=np.float32),
                 'pre_cts': np.array([[0, 0]], dtype=np.float32),
                 'tracking': np.array([[0, 0]], dtype=np.float32),

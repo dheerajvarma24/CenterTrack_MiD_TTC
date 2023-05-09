@@ -23,7 +23,7 @@ from dataset.dataset_factory import get_dataset
 
 class Detector(object):
   def __init__(self, opt):
-    if opt.gpus[0] > 0:
+    if opt.gpus[0] >= 0:
       opt.device = torch.device('cuda')
     else:
       opt.device = torch.device('cpu')

@@ -139,7 +139,7 @@ def generic_decode(output, K=100, opt=None):
     ret['bboxes'] = bboxes
 
  
-  regression_heads = ['tracking', 'dep', 'rot', 'dim', 'amodel_offset',
+  regression_heads = ['tracking', 'dep', 'dep_ratio', 'rot', 'dim', 'amodel_offset',
     'nuscenes_att', 'velocity']
 
   for head in regression_heads:

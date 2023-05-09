@@ -131,6 +131,7 @@ if __name__ == '__main__':
         dim = [float(tmp[10]), float(tmp[11]), float(tmp[12])]
         location = [float(tmp[13]), float(tmp[14]), float(tmp[15])]
         rotation_y = float(tmp[16])
+        dep_ratio = float(tmp[17])
         amodel_center = project_to_image(
           np.array([location[0], location[1] - dim[0] / 2, location[2]], 
             np.float32).reshape(1, 3), calib)[0].tolist()  
@@ -140,6 +141,7 @@ if __name__ == '__main__':
                'dim': dim,
                'bbox': _bbox_to_coco_bbox(bbox),
                'depth': location[2],
+               'dep_ratio': dep_ratio,
                'alpha': alpha,
                'truncated': truncated,
                'occluded': occluded,

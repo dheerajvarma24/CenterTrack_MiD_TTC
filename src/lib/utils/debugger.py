@@ -170,9 +170,12 @@ class Debugger(object):
           c, thickness)
         
       if show_txt:
+        # Type casting to avoid run time error.
+        temp1 = int(bbox[1] - cat_size[1] - thickness)
+        temp2 = int(bbox[0] + cat_size[0])
         cv2.rectangle(self.imgs[img_id],
-                      (bbox[0], bbox[1] - cat_size[1] - thickness),
-                      (bbox[0] + cat_size[0], bbox[1]), c, -1)
+                      (int(bbox[0]), temp1 ),
+                      (temp2, int(bbox[1])), c, -1)
         cv2.putText(self.imgs[img_id], txt, (bbox[0], bbox[1] - thickness - 1), 
                     font, fontsize, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
 
@@ -300,7 +303,7 @@ class Debugger(object):
       self.imgs[img_id] = self.imgs[img_id][:, ::-1].copy()
     for item in dets:
       if item['score'] > vis_thresh \
-        and 'dim' in item and 'loc' in item and 'rot_y' in item:
+        and 'dim' in item and 'loc' in item and 'rot_y' in item and 'dep_ratio' in item:
         cl = (self.colors[int(item['class']) - 1, 0, 0]).tolist() \
           if not self.opt.show_track_color else \
           self.track_color[int(item['tracking_id'])]
@@ -311,6 +314,7 @@ class Debugger(object):
         dim = item['dim']
         loc = item['loc']
         rot_y = item['rot_y']
+        dep_ratio = item['dep_ratio']
         if loc[2] > 1:
           box_3d = compute_box_3d(dim, loc, rot_y)
           box_2d = project_to_image(box_3d, calib)
@@ -328,6 +332,14 @@ class Debugger(object):
           if self.opt.show_track_color:
             self.add_arrow([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], 
               item['tracking'], img_id=img_id)
+          
+          # Add depth and depth ratio info. Enable either one of them at once.
+          fontsize = 0.8 if self.opt.qualitative else 0.5
+          font = cv2.FONT_HERSHEY_SIMPLEX
+          c1 = int((bbox[0] + bbox[2]) / 2)
+          c2 = int((bbox[1] + bbox[3]) / 2)
+          # cv2.putText(self.imgs[img_id], 'depth='+str(loc[2]), (c1, c2), font, fontsize, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
+          cv2.putText(self.imgs[img_id], 'dep_ratio='+str(dep_ratio), (c1, c2), font, fontsize, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
 
     # print('===========================')
   def compose_vis_ddd(

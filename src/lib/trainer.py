@@ -10,7 +10,7 @@ from progress.bar import Bar
 from model.data_parallel import DataParallel
 from utils.utils import AverageMeter
 
-from model.losses import FastFocalLoss, RegWeightedL1Loss
+from model.losses import FastFocalLoss, RegWeightedL1Loss, WeightedL1Loss
 from model.losses import BinRotLoss, WeightedBCELoss
 from model.decode import generic_decode
 from model.utils import _sigmoid, flip_tensor, flip_lr_off, flip_lr
@@ -26,6 +26,8 @@ class GenericLoss(torch.nn.Module):
       self.crit_rot = BinRotLoss()
     if 'nuscenes_att' in opt.heads:
       self.crit_nuscenes_att = WeightedBCELoss()
+    if 'dep_ratio' in opt.heads:
+      self.crit_dep_ratio = WeightedL1Loss()
     self.opt = opt
 
   def _sigmoid_output(self, output):
@@ -59,6 +61,11 @@ class GenericLoss(torch.nn.Module):
           losses[head] += self.crit_reg(
             output[head], batch[head + '_mask'],
             batch['ind'], batch[head]) / opt.num_stacks
+      
+      if 'dep_ratio' in output:
+        losses['dep_ratio'] += self.crit_dep_ratio(
+          output['dep_ratio'], batch['dep_ratio_mask'],
+          batch['ind'], batch['dep_ratio']) / opt.num_stacks
       
       if 'hm_hp' in output:
         losses['hm_hp'] += self.crit(
@@ -182,12 +189,13 @@ class Trainer(object):
   
   def _get_losses(self, opt):
     loss_order = ['hm', 'wh', 'reg', 'ltrb', 'hps', 'hm_hp', \
-      'hp_offset', 'dep', 'dim', 'rot', 'amodel_offset', \
+      'hp_offset', 'dep', 'dep_ratio', 'dim', 'rot', 'amodel_offset', \
       'ltrb_amodal', 'tracking', 'nuscenes_att', 'velocity']
     loss_states = ['tot'] + [k for k in loss_order if k in opt.heads]
     loss = GenericLoss(opt)
     return loss_states, loss
 
+  # This is for debugging, do I need to modify something here?
   def debug(self, batch, output, iter_id, dataset):
     opt = self.opt
     if 'pre_hm' in batch:

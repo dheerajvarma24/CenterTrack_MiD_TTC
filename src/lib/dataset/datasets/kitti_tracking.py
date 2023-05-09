@@ -81,6 +81,8 @@ class KITTITracking(GenericDataset):
             item['dim'] = [-1, -1, -1]
           if not ('loc' in item):
             item['loc'] = [-1000, -1000, -1000]
+          if not ('dep_ratio' in item):
+            item['dep_ratio'] = 1
           
           track_id = item['tracking_id'] if 'tracking_id' in item else -1
           f.write('{} {} {} -1 -1'.format(frame_id - 1, track_id, class_name))
@@ -90,9 +92,9 @@ class KITTITracking(GenericDataset):
           
           f.write(' {:d} {:d} {:d}'.format(
             int(item['dim'][0]), int(item['dim'][1]), int(item['dim'][2])))
-          f.write(' {:d} {:d} {:d}'.format(
-            int(item['loc'][0]), int(item['loc'][1]), int(item['loc'][2])))
-          f.write(' {:d} {:.2f}\n'.format(int(item['rot_y']), item['score']))
+          f.write(' {:.2f} {:.2f} {:.2f}'.format(
+            float(item['loc'][0]), float(item['loc'][1]), float(item['loc'][2])))
+          f.write(' {:d} {:.2f} {:.4f}\n'.format(int(item['rot_y']), item['score'], float(item['dep_ratio'])))
       f.close()
 
   def run_eval(self, results, save_dir):
