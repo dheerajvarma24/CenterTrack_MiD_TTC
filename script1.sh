@@ -29,3 +29,17 @@ echo "************ compile DCNv2  ****************************"
 cd src/lib/model/networks/DCNv2
 sh ./make.sh
 echo "************ done  ****************************"
+
+
+####### next steps ##########
+# TODO create a separate read md file for this.
+# Download the pretrained models and move them to centertrack_root/models (ln -s ../../CenterTrackModelZoo/models/ ./)
+# Create a new 'results' folder in centertrack_root/models
+# Necessary changes to these files (before the initial demo run) Demo.py; debugger.py; logger.py; mobilenet.py; tracker.py
+# Run Demo.py -  python demo.py tracking --load_model ../models/coco_tracking.pth --demo ../videos/nuscenes_mini.mp4 --save_video --video_h 450 --video_w 800
+
+########## prepare datasets ##########
+# prepare data as descirbed in here: https://github.com/xingyizhou/CenterTrack/blob/master/readme/DATA.md
+# For kitti tracking: 
+#   step 1: run add_dep_ratio_to_KITTI_GT script from centertrack/src/tools directory.
+#   step 2: run convert_kittitrack_to_coco.py
