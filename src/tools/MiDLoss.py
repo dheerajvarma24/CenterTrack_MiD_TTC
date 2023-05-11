@@ -1,6 +1,7 @@
 # Script to calculate motion in depth loss.
 # The corresponding predicted objects are matched to gt objects based on the minimum distance (greedy) between the bounding boxes (ltrb values).
 import math
+import argparse
 
 class CalMIDLoss:
     def __init__(self, gt_path, pred_path):
@@ -19,7 +20,6 @@ class CalMIDLoss:
                 row = line.split(' ')
                 frameid = row[0]
                 trackid = row[1]
-                type = row[2] # represents 'Car', 'Pedestrian', 'Cyclist'
                 l = float(row[6])
                 t = float(row[7])
                 r = float(row[8])
@@ -27,67 +27,120 @@ class CalMIDLoss:
                 key = frameid + '_' + trackid
 
                 if filetype == 'gt':
+                    confidence_score = 1
                     dep_ratio = row[17] # there are nan values in gt, so let it be string not float(row[17])
-                    self.gt_data[key] = [(l,t,r,b), dep_ratio, type]
+                    self.gt_data[key] = [(l,t,r,b), dep_ratio, confidence_score]
                 elif filetype == 'pred':
+                    confidence_score = float(row[-2])
                     dep_ratio = float(row[-1])
-                    self.pred_data[key] = [(l,t,r,b), dep_ratio, type]
+                    self.pred_data[key] = [(l,t,r,b), dep_ratio, confidence_score]
 
 
     # Match the pred data with gt data based on the minimum distance between the bounding boxes (ltrb values).
     # To minimise the computation, we can match the pred data with gt data based on the frameid.
     def match_pred_with_gt(self):
-        for pred_key in self.pred_data.keys():
+        for gt_key in self.gt_data.keys():
             # Key is in the format of 'frameid_trackid'
-            pred_frameid = pred_key.split('_')[0]
+            gt_frameid = gt_key.split('_')[0]
             # Set matching score to Max allowed value.
-            score = 1e+6
+            #score = 1e+6
+            current_score = 0
 
-            for gt_key in self.gt_data.keys():
-                # Get all the gt values with the same frameid as of the current pred frameid
-                if gt_key.startswith(pred_frameid):
-                    # calculate matching score
+            for pred_key in self.pred_data.keys():
+                # Get all the pred values with the same frameid as of the current gt frameid
+                if pred_key.startswith(gt_frameid):
+                    # calculate IOU between the two bounding boxes.
                     pred_box = self.pred_data[pred_key][0]
                     gt_box = self.gt_data[gt_key][0]
-                    current_score = abs(pred_box[0] - gt_box[0]) + abs(pred_box[1] - gt_box[1]) + abs(pred_box[2] - gt_box[2]) + abs(pred_box[3] - gt_box[3])
 
-                    # Store the matched data with the minimum score.
-                    if current_score < score:
-                        self.matched_data[pred_key] = [self.pred_data[pred_key], self.gt_data[gt_key]]
-                        score = current_score
+                    iou_score = CalMIDLoss.calculate_iou(pred_box, gt_box)
+
+                    # If the IOU is less than 0.5, then ignore those objects.
+                    if iou_score < 0.5:
+                        continue
+
+                    # Store the matched data with the maximum iou score.
+                    if iou_score > current_score:
+                        self.matched_data[gt_key] = [self.gt_data[gt_key], self.pred_data[pred_key]]
+                        current_score = iou_score
+                    elif iou_score == current_score:
+                        # if IOU score is same, then check for the maximum detection condidence score for the object.
+                        if self.pred_data[pred_key][2] > self.matched_data[gt_key][0][2]:
+                            self.matched_data[gt_key] = [self.gt_data[gt_key], self.pred_data[pred_key]]
+                            current_score = iou_score
+    
+
+    def calculate_iou(pred_box, gt_box):
+        # Calculate the intersection area
+        # inter_area = (min(pred_box[2], gt_box[2]) - max(pred_box[0], gt_box[0])) * (min(pred_box[3], gt_box[3]) - max(pred_box[1], gt_box[1]))
+        x1, y1, x2, y2 = pred_box
+        x3, y3, x4, y4 = gt_box
+        
+        xi1 = max(x1, x3)
+        yi1 = max(y1, y3)
+        xi2 = min(x2, x4)
+        yi2 = min(y2, y4)
+        inter_area = max(xi2 - xi1, 0) * max(yi2 - yi1, 0)
+
+        # Calculate the union area
+        pred_area = (pred_box[2] - pred_box[0]) * (pred_box[3] - pred_box[1])
+        gt_area = (gt_box[2] - gt_box[0]) * (gt_box[3] - gt_box[1])
+        union_area = pred_area + gt_area - inter_area
+
+        # Calculate the IOU
+        iou_score = inter_area / union_area
+
+        return iou_score
 
     # Read the dep_ratio info from the matched_data obtained from above and calculate the loss.
     def cal_MID_Loss(self):
         # Loop through all the matched data
         for matched_key in self.matched_data.keys():
-            pred_dep_ratio = self.matched_data[matched_key][0][1]
-            gt_dep_ratio = self.matched_data[matched_key][1][1]
-            pred_type = self.matched_data[matched_key][0][2]
+            gt_dep_ratio = self.matched_data[matched_key][0][1]
+            pred_dep_ratio = self.matched_data[matched_key][1][1]
 
-            # Ignore the nan values and cyclist type.
-            if str(gt_dep_ratio).lower() == 'nan' or str(pred_dep_ratio).lower() == 'nan' or str(pred_type).lower() == 'cyclist':
+            # Ignore the nan values in gt and pred
+            if str(gt_dep_ratio).lower() == 'nan' or str(pred_dep_ratio).lower() == 'nan':
                 continue
             loss = abs(math.log(pred_dep_ratio) - math.log(float(gt_dep_ratio)))
             self.losses.append(loss)
 
 
 if __name__ == '__main__':
-    final_loss = []
-    for i in range(0,21):
+    parser = argparse.ArgumentParser(description='Enter gt and pred validation file paths')
+
+    # Add the required arguments
+    parser.add_argument('--gt_path', type=str, help='Enter gt val file path')
+    parser.add_argument('--pred_path', type=str, help='Enter pred val file path')
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Check if the arguments are provided
+    if not args.gt_path or not args.pred_path:
+        print('provide the gt and pred validation file paths as arguments')
+    
+    # Read the gt and pred validation file paths
+    gt_val_file_path = args.gt_path
+    pred_val_file_path = args.pred_path
+
+    final_loss = {}
+    # 4 and 11 are validatoin data files.
+    for i in [4,11]:
         if i < 10:
-            gt_path = '../../data/kitti_tracking/label_02_val_half/000' + str(i) + '.txt'
-            pred_path = '../../exp/tracking,ddd/kitti_half/results_kitti_tracking/000' + str(i) + '.txt'
+            gt_path = gt_val_file_path + '/000' + str(i) + '.txt'
+            pred_path = pred_val_file_path + '/000' + str(i) + '.txt'
         else:
-            gt_path = '../../data/kitti_tracking/label_02_val_half/00' + str(i) + '.txt'
-            pred_path = '../../exp/tracking,ddd/kitti_half/results_kitti_tracking/00' + str(i) + '.txt'
+            gt_path = gt_val_file_path + '/00' + str(i) + '.txt'
+            pred_path = pred_val_file_path + '/00' + str(i) + '.txt'
 
         calMIDLoss = CalMIDLoss(gt_path, pred_path)
         calMIDLoss.read_data_from_files(gt_path, 'gt')
         calMIDLoss.read_data_from_files(pred_path, 'pred')
         calMIDLoss.match_pred_with_gt()
         calMIDLoss.cal_MID_Loss()
-        final_loss.append( sum(calMIDLoss.losses)/len(calMIDLoss.losses)  * 10000)
+        final_loss[i] = sum(calMIDLoss.losses)/len(calMIDLoss.losses)  * 10000
         print(f'file name {pred_path}, loss {final_loss[i]:.4f}')
-        print(f'file name {pred_path}, len of the file {len(calMIDLoss.loss)}')
-
-    print(f'Average loss {sum(final_loss)/len(final_loss):.4f}')
+        print(f'file name {pred_path}, len of the file {len(calMIDLoss.losses)}')
+       
+    print(f'Average loss {sum(list(final_loss.values()))/len(list(final_loss.values())):.4f}')

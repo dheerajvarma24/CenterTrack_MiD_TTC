@@ -132,7 +132,7 @@ class GenericDataset(data.Dataset):
     for k in range(num_objs):
       ann = anns[k]
       cls_id = int(self.cat_ids[ann['category_id']])
-      if cls_id > self.opt.num_classes or cls_id <= -999:
+      if cls_id > self.opt.num_classes or cls_id <= -999: # default value for num_classes is num_categories present in this child classes.
         continue
       bbox, bbox_amodal = self._get_bbox_output(
         ann['bbox'], trans_output, height, width)

@@ -19,12 +19,13 @@ from utils.ddd_utils import compute_box_3d, project_to_image
 
 class nuScenes(GenericDataset):
   default_resolution = [448, 800]
-  num_categories = 10
-  class_name = [
-    'car', 'truck', 'bus', 'trailer', 
-    'construction_vehicle', 'pedestrian', 'motorcycle', 'bicycle',
-    'traffic_cone', 'barrier']
-  cat_ids = {i + 1: i + 1 for i in range(num_categories)}
+  # num_categories = 10
+  num_categories = 2
+  # class_name = [ 'car', 'truck', 'bus', 'trailer', 'construction_vehicle', 'pedestrian', 'motorcycle', 'bicycle', 'traffic_cone', 'barrier']
+  class_name = [ 'car', 'pedestrian']
+  #cat_ids = {i + 1: i + 1 for i in range(num_categories)}
+  cat_ids = {1:1, 2:-9999, 3:-9999, 4:-9999, 5:-9999, 6:2, 7:-9999, 8:-9999, 9:-9999, 10:-9999}
+
   focal_length = 1200
   max_objs = 128
   _tracking_ignored_class = ['construction_vehicle', 'traffic_cone', 'barrier']

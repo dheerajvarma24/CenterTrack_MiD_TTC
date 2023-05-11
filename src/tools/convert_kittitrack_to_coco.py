@@ -8,9 +8,9 @@ import numpy as np
 import os
 import cv2
 DATA_PATH = '../../data/kitti_tracking/'
-SPLITS = ['train_half', 'val_half', 'train', 'test']
+SPLITS = ['train_half', 'val_half', 'train', 'test', 'train_MiD', 'val_MiD']
 VIDEO_SETS = {'train': range(21), 'test': range(29), 
-  'train_half': range(21), 'val_half': range(21)}
+  'train_half': range(21), 'val_half': range(21), 'train_MiD':[0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19,20], 'val_MiD': [4,11]}
 CREATE_HALF_LABEL = True
 DEBUG = False
 
@@ -64,7 +64,7 @@ cats = ['Pedestrian', 'Car', 'Cyclist', 'Van', 'Truck',  'Person_sitting',
         'Tram', 'Misc', 'DontCare']
 
 
-cat_ids = {cat: i + 1 for i, cat in enumerate(cats)}
+cat_ids = {cat: i + 1 for i, cat in enumerate(cats)}  # Category/type ids start from index 1.
 cat_ids['Person'] = cat_ids['Person_sitting']
 
 cat_info = []
@@ -89,7 +89,8 @@ if __name__ == '__main__':
       calib = read_clib(calib_path)
       image_files = sorted(os.listdir(video_path))
       num_images_video = len(image_files)
-      if CREATE_HALF_LABEL and 'half' in split:
+      if CREATE_HALF_LABEL and 'half' in split: 
+        # split a video sequence into two halves; first half is for training and second half is for validation.
         image_range = [0, num_images_video // 2 - 1] if split == 'train_half' else \
           [num_images_video // 2, num_images_video - 1]
       else:
@@ -112,7 +113,7 @@ if __name__ == '__main__':
       ann_path = DATA_PATH + 'label_02/{}.txt'.format(video_name)
       anns = open(ann_path, 'r')
       
-      if CREATE_HALF_LABEL and 'half' in split:
+      if ( CREATE_HALF_LABEL and 'half' in split ) or ('MiD' in split):
         label_out_folder = DATA_PATH + 'label_02_{}/'.format(split)
         label_out_path = label_out_folder + '{}.txt'.format(video_name)
         if not os.path.exists(label_out_folder):
@@ -149,7 +150,7 @@ if __name__ == '__main__':
                'rotation_y': rotation_y,
                'amodel_center': amodel_center,
                'track_id': track_id + 1}
-        if CREATE_HALF_LABEL and 'half' in split:
+        if ( CREATE_HALF_LABEL and 'half' in split ) or ('MiD' in split) :
           if (frame_id < image_range[0] or frame_id > image_range[1]):
             continue
           out_frame_id = frame_id - image_range[0]
