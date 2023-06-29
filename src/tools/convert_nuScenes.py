@@ -7,6 +7,7 @@ import json
 import numpy as np
 import cv2
 import copy
+import os
 import matplotlib.pyplot as plt
 from nuscenes.nuscenes import NuScenes
 from nuscenes.utils.geometry_utils import BoxVisibility, transform_matrix

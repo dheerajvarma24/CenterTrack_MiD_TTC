@@ -1,5 +1,4 @@
 # Script to calculate motion in depth loss.
-# The corresponding predicted objects are matched to gt objects based on the minimum distance (greedy) between the bounding boxes (ltrb values).
 import math
 import argparse
 
@@ -28,7 +27,7 @@ class CalMIDLoss:
 
                 if filetype == 'gt':
                     confidence_score = 1
-                    dep_ratio = row[17] # there are nan values in gt, so let it be string not float(row[17])
+                    dep_ratio = row[-1] # there are nan values in gt, so let it be string not float(row[17])
                     self.gt_data[key] = [(l,t,r,b), dep_ratio, confidence_score]
                 elif filetype == 'pred':
                     confidence_score = float(row[-2])
@@ -65,7 +64,7 @@ class CalMIDLoss:
                         current_score = iou_score
                     elif iou_score == current_score:
                         # if IOU score is same, then check for the maximum detection condidence score for the object.
-                        if self.pred_data[pred_key][2] > self.matched_data[gt_key][0][2]:
+                        if self.pred_data[pred_key][2] > self.matched_data[gt_key][1][2]:
                             self.matched_data[gt_key] = [self.gt_data[gt_key], self.pred_data[pred_key]]
                             current_score = iou_score
     
@@ -142,5 +141,6 @@ if __name__ == '__main__':
         final_loss[i] = sum(calMIDLoss.losses)/len(calMIDLoss.losses)  * 10000
         print(f'file name {pred_path}, loss {final_loss[i]:.4f}')
         print(f'file name {pred_path}, len of the file {len(calMIDLoss.losses)}')
-       
-    print(f'Average loss {sum(list(final_loss.values()))/len(list(final_loss.values())):.4f}')
+      
+    print(f'Average MiD Loss {sum(list(final_loss.values()))/len(list(final_loss.values())):.4f}')
+    

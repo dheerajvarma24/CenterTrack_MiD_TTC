@@ -4,3 +4,6 @@ python main.py tracking,ddd --exp_id nuScenes_3Dtracking --dataset nuscenes --pr
 # test
 python test.py tracking,ddd --exp_id nuScenes_3Dtracking --dataset nuscenes --pre_hm --track_thresh 0.1 --resume
 cd ..
+
+#or
+python test.py tracking,ddd --exp_id nuScenes_3Dtracking --load_model ../models/nuScenes_3Dtracking.pth --dataset nuscenes --track_thresh 0.1 --pre_hm --save_results

@@ -78,7 +78,10 @@ def main(opt):
       with torch.no_grad():
         log_dict_val, preds = trainer.val(epoch, val_loader)
         if opt.eval_val:
-          val_loader.dataset.run_eval(preds, opt.save_dir)
+          midloss = val_loader.dataset.run_eval(preds, opt.save_dir)
+          # mid loss is not none only when the dataset is KITTI Tracking train
+          if midloss is not None:
+            log_dict_val['midloss'] = midloss
       for k, v in log_dict_val.items():
         logger.scalar_summary('val_{}'.format(k), v, epoch)
         logger.write('{} {:8f} | '.format(k, v))

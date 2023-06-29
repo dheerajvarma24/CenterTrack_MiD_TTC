@@ -123,7 +123,7 @@ nuScenes is used for training and evaluating 3D object tracking. We also used nu
           |   |   |-- CAM_FRONT_LEFT
           |   |   |-- CAM_FRONT_RIGHT
           |-- |-- maps
-          `-- |-- v1.0-trainval_meta
+          `-- |-- v1.0-trainval
   ~~~
 
 - Run `python convert_kitti_to_coco.py` in `tools` to convert the annotation into COCO format. It will create `train.json`, `val.json`, `test.json` under `data/nuscenes/annotations`. nuScenes API is required for running the data preprocessing.

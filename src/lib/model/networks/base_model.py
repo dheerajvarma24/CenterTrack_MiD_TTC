@@ -51,6 +51,31 @@ class BaseModel(nn.Module):
                     convs[1], nn.ReLU(inplace=True), 
                     convs[2], nn.ReLU(inplace=True), 
                     convs[3], nn.ReLU(inplace=True), out)
+              
+              #256-256-1024-1024-256-256-64-64-16-16-out
+              elif len(convs) == 8:
+                fc = nn.Sequential(
+                    convs[0],
+                    nn.ReLU(inplace=True),
+                    convs[1],
+                    nn.ReLU(inplace=True), 
+                    nn.Conv2d(256, 1024, kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(1024, 1024,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(1024, 256,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(256, 256,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(256, 64,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(64, 64,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(64, 16,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(16, 16,  kernel_size=3, padding=1, stride=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(16, classes, kernel_size=1, stride=1, padding=0, bias=True))
               if 'hm' in head:
                 fc[-1].bias.data.fill_(opt.prior_bias)
               else:

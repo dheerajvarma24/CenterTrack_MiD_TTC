@@ -1,4 +1,5 @@
 # Copyright (c) Xingyi Zhou. All Rights Reserved
+## Modified to include only car and pedestrian classes in its training.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,12 +20,13 @@ from utils.ddd_utils import compute_box_3d, project_to_image
 
 class nuScenes(GenericDataset):
   default_resolution = [448, 800]
-  num_categories = 10
-  class_name = [
-    'car', 'truck', 'bus', 'trailer', 
-    'construction_vehicle', 'pedestrian', 'motorcycle', 'bicycle',
-    'traffic_cone', 'barrier']
-  cat_ids = {i + 1: i + 1 for i in range(num_categories)}
+  # num_categories = 10
+  num_categories = 2
+  # class_name = [ 'car', 'truck', 'bus', 'trailer', 'construction_vehicle', 'pedestrian', 'motorcycle', 'bicycle', 'traffic_cone', 'barrier']
+  class_name = [ 'car', 'pedestrian']
+  #cat_ids = {i + 1: i + 1 for i in range(num_categories)}
+  cat_ids = {1:1, 2:-9999, 3:-9999, 4:-9999, 5:-9999, 6:2, 7:-9999, 8:-9999, 9:-9999, 10:-9999}
+
   focal_length = 1200
   max_objs = 128
   _tracking_ignored_class = ['construction_vehicle', 'traffic_cone', 'barrier']
@@ -127,6 +129,10 @@ class nuScenes(GenericDataset):
 
         det_id = item['det_id'] if 'det_id' in item else -1
         tracking_id = item['tracking_id'] if 'tracking_id' in item else 1
+        if 'dep_ratio' in item:
+          dep_ratio = item['dep_ratio']
+        else:
+          dep_ratio = np.nan
         
         if not ('rotation' in item):
           rot_cam = Quaternion(
@@ -176,7 +182,8 @@ class nuScenes(GenericDataset):
           'tracking_score': score,
           'tracking_id': tracking_id,
           'sensor_id': sensor_id,
-          'det_id': det_id}
+          'det_id': det_id,
+          'dep_ratio': dep_ratio}
 
         sample_results.append(result)
       if sample_token in ret['results']:
@@ -214,8 +221,9 @@ class nuScenes(GenericDataset):
         '{}/results_nuscenes_{}.json '.format(save_dir, task) + \
         '--output_dir {}/nuscenes_evaltracl__output/ '.format(save_dir) + \
         '--dataroot ../data/nuscenes/v1.0-trainval/')
-      os.system('python ' + \
+      
+      '''os.system('python ' + \
         'tools/nuscenes-devkit/python-sdk-alpha02/nuscenes/eval/tracking/evaluate.py ' +\
         '{}/results_nuscenes_{}.json '.format(save_dir, task) + \
         '--output_dir {}/nuscenes_evaltracl__output/ '.format(save_dir) + \
-        '--dataroot ../data/nuscenes/v1.0-trainval/')
+        '--dataroot ../data/nuscenes/v1.0-trainval/')'''

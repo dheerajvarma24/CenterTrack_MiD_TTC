@@ -12,6 +12,7 @@ import math
 
 from ..generic_dataset import GenericDataset
 from utils.ddd_utils import compute_box_3d, project_to_image
+from tools.MiDLoss import CalMIDLoss
 
 class KITTITracking(GenericDataset):
   # num_categories = 3
@@ -111,3 +112,29 @@ class KITTITracking(GenericDataset):
               '{}/results_kitti_tracking/ {}'.format(
                 save_dir, self.opt.dataset_version))
     
+    # eval MiDLoss
+    # call the class and respective fns.
+    gt_val_MiD_path = '../data/kitti_tracking/label_02_val_MiD'
+    pred_val_MiD_path = save_dir + '/results_kitti_tracking'
+
+    final_loss = {}
+    # 4 and 11 are validatoin data files.
+    for i in [4,11]:
+        if i < 10:
+            gt_path = gt_val_MiD_path + '/000' + str(i) + '.txt'
+            pred_path = pred_val_MiD_path + '/000' + str(i) + '.txt'
+        else:
+            gt_path = gt_val_MiD_path + '/00' + str(i) + '.txt'
+            pred_path = pred_val_MiD_path + '/00' + str(i) + '.txt'
+
+        calMIDLoss = CalMIDLoss(gt_path, pred_path)
+        calMIDLoss.read_data_from_files(gt_path, 'gt')
+        calMIDLoss.read_data_from_files(pred_path, 'pred')
+        calMIDLoss.match_pred_with_gt()
+        calMIDLoss.cal_MID_Loss()
+        final_loss[i] = sum(calMIDLoss.losses)/len(calMIDLoss.losses)  * 10000
+        print(f'file name {pred_path}, loss {final_loss[i]:.4f}')
+        print(f'file name {pred_path}, len of the file {len(calMIDLoss.losses)}')
+    # return average loss.
+    print(f'Average MiD Loss {sum(list(final_loss.values()))/len(list(final_loss.values())):.4f}')
+    return sum(list(final_loss.values()))/len(list(final_loss.values()))
