@@ -96,8 +96,10 @@ class opts(object):
     self.parser.add_argument('--not_idaup', action='store_true')
     self.parser.add_argument('--num_classes', type=int, default=-1)
     self.parser.add_argument('--num_layers', type=int, default=101)
-    self.parser.add_argument('--backbone', default='dla34')
-    self.parser.add_argument('--neck', default='dlaup')
+    self.parser.add_argument('--backbone', default='dla34', 
+                             help = 'resnet |  dla34 | mobilenet | hrnet')
+    self.parser.add_argument('--neck', default='dlaup',
+                             help = 'dlaup | msraup ')
     self.parser.add_argument('--msra_outchannel', type=int, default=256)
     self.parser.add_argument('--efficient_level', type=int, default=0)
     self.parser.add_argument('--prior_bias', type=float, default=-4.6) # -2.19

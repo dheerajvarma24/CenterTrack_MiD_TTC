@@ -110,7 +110,7 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
 class Resnet(nn.Module):
     def __init__(self, opt):
         super().__init__()
-        assert (not opt.pre_hm) and (not opt.pre_img)
+        # assert (not opt.pre_hm) and (not opt.pre_img)
         self.inplanes = 64
         block, layers = resnet_spec[opt.num_layers]
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
@@ -149,7 +149,12 @@ class Resnet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, pre_img=None, pre_hm=None):
+        if pre_img is not None:
+            x = x + pre_img
+        if pre_hm is not None:
+            x = x + pre_hm
+            
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)

@@ -7,13 +7,15 @@ from torch import nn
 from .backbones.dla import dla34
 from .backbones.resnet import Resnet
 from .backbones.mobilenet import MobileNetV2
+from .backbones.hrnet import HRNet
 from .necks.dlaup import DLASeg
 from .necks.msraup import MSRAUp
 
 backbone_factory = {
   'dla34': dla34,
   'resnet': Resnet,
-  'mobilenet': MobileNetV2
+  'mobilenet': MobileNetV2,
+  'hrnet': HRNet
 }
 
 neck_factory = {
