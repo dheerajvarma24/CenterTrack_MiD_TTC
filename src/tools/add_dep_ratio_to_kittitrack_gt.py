@@ -1,5 +1,6 @@
 import numpy as np
 import fileinput
+import argparse
 
 
 class GTDepRatio(object):
@@ -16,8 +17,8 @@ class GTDepRatio(object):
                 row = line.split(' ')
                 frameid = row[0]
                 trackid = row[1]
-                depth = row[-2] # row -2 is the depth info in gt
-                # depth = row[-4] # row -4 is the depth info in pred.
+                # depth = row[-2] # row -2 is the depth info in gt
+                depth = row[-4] # row -4 is the depth info in pred.
                 if frameid in self.input_dict:
                     self.input_dict[frameid].append((trackid, depth))
                 else:
@@ -86,11 +87,20 @@ class GTDepRatio(object):
 
 
 if __name__ == '__main__':
-    for i in range (0, 21):
+    parser = argparse.ArgumentParser(description='Enter gt and pred validation file paths')
+
+    # Add the required arguments
+    parser.add_argument('--gt_path', type=str, help='Enter gt val file path')
+    # Parse the arguments
+    args = parser.parse_args()
+
+    #for i in range (0, 21):
+    gt_val_file_path = args.gt_path
+    for i in [4,11]:
         if i < 10:
-            filename = '../../data/kitti_tracking/label_02/000'+str(i)+'.txt'
+            filename = gt_val_file_path+'000'+str(i)+'.txt'
         else:
-            filename = '../../data/kitti_tracking/label_02/00'+str(i)+'.txt'
+            filename = gt_val_file_path+'00'+str(i)+'.txt'
         gtDepRatio = GTDepRatio(filename)
         gtDepRatio.readinput()
         gtDepRatio.add_depth_ratio()

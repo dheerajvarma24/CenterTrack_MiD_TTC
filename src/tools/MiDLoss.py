@@ -19,6 +19,7 @@ class CalMIDLoss:
                 row = line.split(' ')
                 frameid = row[0]
                 trackid = row[1]
+                classid = row[2]
                 l = float(row[6])
                 t = float(row[7])
                 r = float(row[8])
@@ -28,15 +29,16 @@ class CalMIDLoss:
                 if filetype == 'gt':
                     confidence_score = 1
                     dep_ratio = row[-1] # there are nan values in gt, so let it be string not float(row[17])
-                    self.gt_data[key] = [(l,t,r,b), dep_ratio, confidence_score]
+                    self.gt_data[key] = [(l,t,r,b), dep_ratio, confidence_score, classid]
                 elif filetype == 'pred':
                     confidence_score = float(row[-2])
                     dep_ratio = float(row[-1])
-                    self.pred_data[key] = [(l,t,r,b), dep_ratio, confidence_score]
+                    self.pred_data[key] = [(l,t,r,b), dep_ratio, confidence_score, classid]
 
 
-    # Match the pred data with gt data based on the minimum distance between the bounding boxes (ltrb values).
-    # To minimise the computation, we can match the pred data with gt data based on the frameid.
+
+    #Identify all the objects in the pred frame.
+    #For each object in the pred frame, find the object in the gt frame with the highest IOU.
     def match_pred_with_gt(self):
         for gt_key in self.gt_data.keys():
             # Key is in the format of 'frameid_trackid'
@@ -46,8 +48,8 @@ class CalMIDLoss:
             current_score = 0
 
             for pred_key in self.pred_data.keys():
-                # Get all the pred values with the same frameid as of the current gt frameid
-                if pred_key.startswith(gt_frameid):
+                # Get all the pred values with the same frameid as of the current gt frameid and also check for the class id.
+                if pred_key.startswith(gt_frameid) and self.pred_data[pred_key][-1].lower() == self.gt_data[gt_key][-1].lower(): # check for class id also 
                     # calculate IOU between the two bounding boxes.
                     pred_box = self.pred_data[pred_key][0]
                     gt_box = self.gt_data[gt_key][0]
@@ -88,7 +90,6 @@ class CalMIDLoss:
 
         # Calculate the IOU
         iou_score = inter_area / union_area
-
         return iou_score
 
     # Read the dep_ratio info from the matched_data obtained from above and calculate the loss.
@@ -101,6 +102,12 @@ class CalMIDLoss:
             # Ignore the nan values in gt and pred
             if str(gt_dep_ratio).lower() == 'nan' or str(pred_dep_ratio).lower() == 'nan':
                 continue
+                
+            # (optional) Ignore the objects with dep ratio > 1
+            if float(gt_dep_ratio) > 1:
+                continue
+            
+            # Multiply with 10^4 at the end for the final loss. 
             loss = abs(math.log(pred_dep_ratio) - math.log(float(gt_dep_ratio)))
             self.losses.append(loss)
 

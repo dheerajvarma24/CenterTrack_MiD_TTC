@@ -6,6 +6,7 @@ import _init_paths
 import os
 import json
 import cv2
+import time
 import numpy as np
 import time
 from progress.bar import Bar
@@ -84,6 +85,7 @@ def prefetch_test(opt):
     for img_id in data_loader.dataset.images:
       results[img_id] = load_results['{}'.format(img_id)]
     num_iters = 0
+  t_preds = []
   for ind, (img_id, pre_processed_images) in enumerate(data_loader):
     if ind >= num_iters:
       break
@@ -105,8 +107,10 @@ def prefetch_test(opt):
       else:
         print('No cur_dets for', int(img_id.numpy().astype(np.int32)[0]))
         pre_processed_images['meta']['cur_dets'] = []
-    
+    t0 = time.time()
     ret = detector.run(pre_processed_images)
+    t1 = time.time()
+    t_preds.append(t1 - t0)
     results[int(img_id.numpy().astype(np.int32)[0])] = ret['results']
     
     Bar.suffix = '[{0}/{1}]|Tot: {total:} |ETA: {eta:} '.format(
@@ -121,13 +125,18 @@ def prefetch_test(opt):
     else:
       bar.next()
   bar.finish()
+  print('######## total prediction time #########', sum(t_preds))
   if opt.save_results:
     print('saving results to', opt.save_dir + '/save_results_{}{}.json'.format(
       opt.test_dataset, opt.dataset_version))
+    t2 = time.time()
     json.dump(_to_list(copy.deepcopy(results)), 
               open(opt.save_dir + '/save_results_{}{}.json'.format(
                 opt.test_dataset, opt.dataset_version), 'w'))
+    print('######## pred save time #########', time.time() - t2)
+  t3 = time.time()
   dataset.run_eval(results, opt.save_dir)
+  print('######### pred eval time #########', time.time() - t3)
 
 def test(opt):
   os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
