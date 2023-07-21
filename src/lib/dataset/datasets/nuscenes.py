@@ -214,8 +214,8 @@ class nuScenes(GenericDataset):
         '{}/results_nuscenes_{}.json '.format(save_dir, task) + \
         '--output_dir {}/nuscenes_evaltracl__output/ '.format(save_dir) + \
         '--dataroot ../data/nuscenes/v1.0-trainval/')
-      os.system('python ' + \
+      '''os.system('python ' + \
         'tools/nuscenes-devkit/python-sdk-alpha02/nuscenes/eval/tracking/evaluate.py ' +\
         '{}/results_nuscenes_{}.json '.format(save_dir, task) + \
         '--output_dir {}/nuscenes_evaltracl__output/ '.format(save_dir) + \
-        '--dataroot ../data/nuscenes/v1.0-trainval/')
+        '--dataroot ../data/nuscenes/v1.0-trainval/')'''

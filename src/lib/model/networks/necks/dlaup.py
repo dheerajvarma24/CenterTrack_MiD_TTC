@@ -174,6 +174,7 @@ class DLASeg(nn.Module):
         self.node_type = DLA_NODE[opt.dla_node]
         print('Using node type:', self.node_type)
         down_ratio = 4
+        # First level is always 2. ( 0 index )
         self.first_level = int(np.log2(down_ratio))
         self.last_level = 5
 

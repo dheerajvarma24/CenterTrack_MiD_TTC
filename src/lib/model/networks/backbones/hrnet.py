@@ -1,5 +1,5 @@
 # install mmcv-full and mmengine libraries.
-# NOTE - This file is referenced from MMDetection hrnet backbones and modified to work with CenterTrack repo.
+# NOTE - Ref:  https://github.com/AbdulHannanKhan/F2DNet/blob/master/mmdet/models/backbones/hrnet.py and modified to work with CenterTrack Architecture.
 import logging
 import warnings
 
@@ -10,11 +10,13 @@ from mmcv.cnn import constant_init, kaiming_init, build_plugin_layer
 from mmcv.runner import load_checkpoint
 from mmengine.model import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
+from torch.utils.model_zoo import load_url
 
 # from ..registry import BACKBONES
 # from ..utils import build_norm_layer, build_conv_layer
 # from .resnet import BasicBlock, Bottleneck
 
+hrnet_w32_url = 'https://download.openmmlab.com/pretrain/third_party/hrnetv2_w32-dc9eeb4f.pth'
 
 ######### basic block and bottleneck block #########
 class BasicBlock(BaseModule):
@@ -511,7 +513,51 @@ class HRNet(nn.Module):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+        multiscale_output (bool): Whether to output multi-level features
+            produced by multiple branches. If False, only the first level
+            feature will be output. Default: True.
     """
+
+    '''
+        Example:
+         from mmdet.models import HRNet
+         import torch
+         extra = dict(
+             stage1=dict(
+                 num_modules=1,
+                 num_branches=1,
+                 block='BOTTLENECK',
+                 num_blocks=(4, ),
+                 num_channels=(64, )),
+             stage2=dict(
+                 num_modules=1,
+                 num_branches=2,
+                 block='BASIC',
+                 num_blocks=(4, 4),
+                 num_channels=(32, 64)),
+             stage3=dict(
+                 num_modules=4,
+                 num_branches=3,
+                 block='BASIC',
+                 num_blocks=(4, 4, 4),
+                 num_channels=(32, 64, 128)),
+             stage4=dict(
+                 num_modules=3,
+                 num_branches=4,
+                 block='BASIC',
+                 num_blocks=(4, 4, 4, 4),
+                 num_channels=(32, 64, 128, 256)))
+         self = HRNet(extra, in_channels=1)
+         self.eval()
+         inputs = torch.rand(1, 1, 32, 32)
+         level_outputs = self.forward(inputs)
+         for level_out in level_outputs:
+              print(tuple(level_out.shape))
+        (1, 32, 8, 8)
+        (1, 64, 4, 4)
+        (1, 128, 2, 2)
+        (1, 256, 1, 1)
+    '''
 
     blocks_dict = {'BASIC': BasicBlock, 'BOTTLENECK': Bottleneck}
 
@@ -631,8 +677,12 @@ class HRNet(nn.Module):
             self.stage4_cfg, num_channels)
         
 
-
+        # TODO: Hard coded
         self.channels = [64,64,32,64,128,256] # required by the neck network.
+
+        pretrained_state_dict = load_url(hrnet_w32_url)
+        print('=> loading pretrained model {}'.format(hrnet_w32_url))
+        self.load_state_dict(pretrained_state_dict, strict=False)
         
 
     @property

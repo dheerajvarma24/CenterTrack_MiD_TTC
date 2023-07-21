@@ -76,12 +76,16 @@ def main(opt):
       save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)), 
                  epoch, model, optimizer)
       with torch.no_grad():
-        log_dict_val, preds = trainer.val(epoch, val_loader)
+        #log_dict_val, preds = trainer.val(epoch, val_loader)
         if opt.eval_val:
-          val_loader.dataset.run_eval(preds, opt.save_dir)
-      for k, v in log_dict_val.items():
-        logger.scalar_summary('val_{}'.format(k), v, epoch)
-        logger.write('{} {:8f} | '.format(k, v))
+          # val_loader.dataset.run_eval(preds, opt.save_dir)
+          print('######### validation #########')
+          #os.system('python test.py tracking --exp_id=kitti_half --dataset=kitti_tracking --dataset_version=val_half --pre_hm --track_thresh=0.4 --save_results --load_model={}'.format(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark))))
+          #os.system('python test.py tracking --exp_id=test_del_nuScenes_3Dtracking --dataset=nuscenes --pre_hm --track_thresh=0.4 --load_model=todo_load_model --arch=generic --backbone=hrnet --save_results'.format(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark))))
+          
+      #for k, v in log_dict_val.items():
+        #logger.scalar_summary('val_{}'.format(k), v, epoch)
+        #logger.write('{} {:8f} | '.format(k, v))
     else:
       save_model(os.path.join(opt.save_dir, 'model_last.pth'), 
                  epoch, model, optimizer)
