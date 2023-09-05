@@ -23,47 +23,41 @@ class BaseModel(nn.Module):
         self.opt = opt
         self.num_stacks = num_stacks
         self.heads = heads
+        self.last_channel = last_channel
         for head in self.heads:
             classes = self.heads[head]
-            if self.opt.headtype == 'mlp_mixer':
-               # let the patch size be 8X8
-               mixer_block = MixerBlock(8*8, last_channel, use_ln=True)
-               mlp = MLP(embedding_dim_in=last_channel, hidden_dim=16, embedding_dim_out=classes)
-               fc = nn.Sequential(mixer_block, mlp)
-            
-            elif not self.opt.headtype == 'mlp_mixer':
-              head_conv = head_convs[head]
-              if len(head_conv) > 0:
-                out = nn.Conv2d(head_conv[-1], classes, 
-                      kernel_size=1, stride=1, padding=0, bias=True)
-                conv = nn.Conv2d(last_channel, head_conv[0],
-                                kernel_size=head_kernel, 
-                                padding=head_kernel // 2, bias=True)
-                convs = [conv]
-                for k in range(1, len(head_conv)):
-                    convs.append(nn.Conv2d(head_conv[k - 1], head_conv[k], 
-                                kernel_size=1, bias=True))
-                if len(convs) == 1:
-                  fc = nn.Sequential(conv, nn.ReLU(inplace=True), out)
-                elif len(convs) == 2:
-                  fc = nn.Sequential(
+            head_conv = head_convs[head]
+            if len(head_conv) > 0:
+              out = nn.Conv2d(head_conv[-1], classes, 
+                    kernel_size=1, stride=1, padding=0, bias=True)
+              conv = nn.Conv2d(last_channel, head_conv[0],
+                              kernel_size=head_kernel, 
+                              padding=head_kernel // 2, bias=True)
+              convs = [conv]
+              for k in range(1, len(head_conv)):
+                  convs.append(nn.Conv2d(head_conv[k - 1], head_conv[k], 
+                              kernel_size=1, bias=True))
+              if len(convs) == 1:
+                fc = nn.Sequential(conv, nn.ReLU(inplace=True), out)
+              elif len(convs) == 2:
+                fc = nn.Sequential(
+                  convs[0], nn.ReLU(inplace=True), 
+                  convs[1], nn.ReLU(inplace=True), out)
+              elif len(convs) == 3:
+                fc = nn.Sequential(
                     convs[0], nn.ReLU(inplace=True), 
-                    convs[1], nn.ReLU(inplace=True), out)
-                elif len(convs) == 3:
-                  fc = nn.Sequential(
-                      convs[0], nn.ReLU(inplace=True), 
-                      convs[1], nn.ReLU(inplace=True), 
-                      convs[2], nn.ReLU(inplace=True), out)
-                elif len(convs) == 4:
-                  fc = nn.Sequential(
-                      convs[0], nn.ReLU(inplace=True), 
-                      convs[1], nn.ReLU(inplace=True), 
-                      convs[2], nn.ReLU(inplace=True), 
-                      convs[3], nn.ReLU(inplace=True), out)
-                if 'hm' in head:
-                  fc[-1].bias.data.fill_(opt.prior_bias)
-                else:
-                  fill_fc_weights(fc)
+                    convs[1], nn.ReLU(inplace=True), 
+                    convs[2], nn.ReLU(inplace=True), out)
+              elif len(convs) == 4:
+                fc = nn.Sequential(
+                    convs[0], nn.ReLU(inplace=True), 
+                    convs[1], nn.ReLU(inplace=True), 
+                    convs[2], nn.ReLU(inplace=True), 
+                    convs[3], nn.ReLU(inplace=True), out)
+              if 'hm' in head:
+                fc[-1].bias.data.fill_(opt.prior_bias)
+              else:
+                fill_fc_weights(fc)
             else:
               fc = nn.Conv2d(last_channel, classes, 
                   kernel_size=1, stride=1, padding=0, bias=True)
@@ -71,7 +65,14 @@ class BaseModel(nn.Module):
                 fc.bias.data.fill_(opt.prior_bias)
               else:
                 fill_fc_weights(fc)
+            
             self.__setattr__(head, fc)
+        
+        if self.opt.headtype == 'mlp_mixer':
+               # let the patch size be 8X8
+                mixer_block = MixerBlock(8*8, self.last_channel, use_ln=True)
+                mlp_block = MLP(embedding_dim_in=self.last_channel, hidden_dim=128, embedding_dim_out=self.last_channel)
+                self.mlp_fc = nn.Sequential(mixer_block, mlp_block)
 
     def window_partition(self, x, window_size, channel_last=True):
       """
@@ -122,10 +123,12 @@ class BaseModel(nn.Module):
         for s in range(self.num_stacks):
           z = {}
           for head in self.heads:
-              windows = self.window_partition(feats[s], 8, channel_last=False)
-              # B, num_windows, PXP, C = windows.shape
-              mlp_mixer_out = self.__getattr__(head)(windows)          
-              z[head]  = self.window_reverse(mlp_mixer_out, 8, x.shape[3]//self.opt.down_ratio, x.shape[2]//self.opt.down_ratio)
+            # pass through mixer head
+            windows = self.window_partition(feats[s], 8, channel_last=False)
+            mlp_fc_out= self.mlp_fc(windows)
+            win_rev  = self.window_reverse(mlp_fc_out, 8, x.shape[3]//self.opt.down_ratio, x.shape[2]//self.opt.down_ratio)
+            # also pass through conv head
+            z[head] = self.__getattr__(head)(win_rev)
           out.append(z)
       elif self.opt.model_output_list:
         for s in range(self.num_stacks):
