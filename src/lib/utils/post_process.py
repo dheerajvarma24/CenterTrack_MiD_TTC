@@ -55,6 +55,9 @@ def generic_post_process(
 
       if 'dep' in dets and len(dets['dep'][i]) > j:
         item['dep'] = dets['dep'][i][j]
+
+      if 'dep_ratio' in dets and len(dets['dep_ratio'][i]) > j:
+        item['dep_ratio'] = dets['dep_ratio'][i][j]
       
       if 'dim' in dets and len(dets['dim'][i]) > j:
         item['dim'] = dets['dim'][i][j]

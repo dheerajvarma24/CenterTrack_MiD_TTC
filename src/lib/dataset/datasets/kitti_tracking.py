@@ -16,7 +16,8 @@ from utils.ddd_utils import compute_box_3d, project_to_image
 class KITTITracking(GenericDataset):
   num_categories = 3
   default_resolution = [384, 1280]
-  class_name = ['Pedestrian', 'Car', 'Cyclist']
+  # TODO chamge this only car for MiD
+  class_name = ['Pedestrian', 'Car', 'Cyclist'] 
   # negative id is for "not as negative sample for abs(id)".
   # 0 for ignore losses for all categories in the bounding box region
   # ['Pedestrian', 'Car', 'Cyclist', 'Van', 'Truck',  'Person_sitting',
@@ -81,6 +82,8 @@ class KITTITracking(GenericDataset):
             item['dim'] = [-1, -1, -1]
           if not ('loc' in item):
             item['loc'] = [-1000, -1000, -1000]
+          if not ('dep_ratio' in item):
+            item['dep_ratio'] = -1000
           
           track_id = item['tracking_id'] if 'tracking_id' in item else -1
           f.write('{} {} {} -1 -1'.format(frame_id - 1, track_id, class_name))
@@ -92,7 +95,7 @@ class KITTITracking(GenericDataset):
             int(item['dim'][0]), int(item['dim'][1]), int(item['dim'][2])))
           f.write(' {:d} {:d} {:d}'.format(
             int(item['loc'][0]), int(item['loc'][1]), int(item['loc'][2])))
-          f.write(' {:d} {:.2f}\n'.format(int(item['rot_y']), item['score']))
+          f.write(' {:d} {:.2f} {:.2f}\n'.format(int(item['rot_y']), item['score'], item['dep_ratio'][0]))
       f.close()
 
   def run_eval(self, results, save_dir):

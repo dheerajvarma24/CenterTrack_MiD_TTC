@@ -140,7 +140,7 @@ def generic_decode(output, K=100, opt=None):
 
  
   regression_heads = ['tracking', 'dep', 'rot', 'dim', 'amodel_offset',
-    'nuscenes_att', 'velocity']
+    'nuscenes_att', 'velocity', 'dep_ratio']
 
   for head in regression_heads:
     if head in output:
