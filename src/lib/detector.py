@@ -9,6 +9,8 @@ from progress.bar import Bar
 import time
 import torch
 import math
+from deepspeed.profiling.flops_profiler import get_model_profile
+from deepspeed.accelerator import get_accelerator
 
 from model.model import create_model, load_model
 from model.decode import generic_decode
@@ -34,6 +36,47 @@ class Detector(object):
     self.model = load_model(self.model, opt.load_model, opt)
     self.model = self.model.to(opt.device)
     self.model.eval()
+
+    # Ref - https://www.deepspeed.ai/tutorials/flops-profiler/#in-model-inference
+
+    with get_accelerator().device(0):
+      model =  self.model
+      batch_size = opt.batch_size
+      kwargs_dict = {}
+      ''' "args": ["tracking",
+            "--exp_id","kitti_half",
+            "--dataset", "kitti_tracking",
+            "--dataset_version", "train_half",
+            "--pre_hm",
+            "--same_aug",
+            "--hm_disturb", "0.05",
+            "--lost_disturb", "0.2",
+            "--fp_disturb", "0.1",
+            "--gpus", "-1",
+            "--batch_size", "1",
+            "--num_workers", "0",
+            "--headtype", "rep_block"]'''
+      kwargs_dict['--exp_id'] = opt.exp_id
+      kwargs_dict['--dataset'] = opt.dataset
+      kwargs_dict['--dataset_version'] = opt.dataset_version
+      kwargs_dict['--pre_hm'] = opt.pre_hm
+      kwargs_dict['--same_aug'] = opt.same_aug
+      kwargs_dict['--hm_disturb'] = opt.hm_disturb
+      kwargs_dict['--lost_disturb'] = opt.lost_disturb
+      kwargs_dict['--fp_disturb'] = opt.fp_disturb
+      kwargs_dict['--gpus'] = opt.gpus
+      kwargs_dict['--num_workers'] = opt.num_workers
+      kwargs_dict['--load_model'] = opt.load_model
+      kwargs_dict['--headtype'] = opt.headtype
+      args_list = ['tracking', '--pre_hm', '--same_aug']
+      flops, macs, params = get_model_profile(model=model, # model
+                                      input_shape=(batch_size, 3, 384, 1280), # input shape to the model. If specified, the model takes a tensor with this shape as the only positional argument.
+                                      args=args_list, # list of positional arguments to the model.
+                                      kwargs=kwargs_dict, # dictionary of keyword arguments to the model
+                                      )
+
+    print('--------------------------------flops params macs -------------------------')
+    print(f"FLOPS: {flops}, MACS: {macs}, PARAMS: {params}")
 
     self.opt = opt
     self.trained_dataset = get_dataset(opt.dataset)
@@ -136,7 +179,7 @@ class Detector(object):
 
     # merge multi-scale testing results
     results = self.merge_outputs(detections)
-    torch.cuda.synchronize()
+    #torch.cuda.synchronize()
     end_time = time.time()
     merge_time += end_time - post_process_time
     
@@ -335,17 +378,17 @@ class Detector(object):
   def process(self, images, pre_images=None, pre_hms=None,
     pre_inds=None, return_time=False):
     with torch.no_grad():
-      torch.cuda.synchronize()
+      #torch.cuda.synchronize()
       output = self.model(images, pre_images, pre_hms)[-1]
       output = self._sigmoid_output(output)
       output.update({'pre_inds': pre_inds})
       if self.opt.flip_test:
         output = self._flip_output(output)
-      torch.cuda.synchronize()
+      #torch.cuda.synchronize()
       forward_time = time.time()
       
       dets = generic_decode(output, K=self.opt.K, opt=self.opt)
-      torch.cuda.synchronize()
+      #torch.cuda.synchronize()
       for k in dets:
         dets[k] = dets[k].detach().cpu().numpy()
     if return_time:
