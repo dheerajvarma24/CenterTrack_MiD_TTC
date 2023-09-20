@@ -241,6 +241,8 @@ class opts(object):
                              help='Please forgive the typo.')
     self.parser.add_argument('--dep_weight', type=float, default=1,
                              help='loss weight for depth.')
+    self.parser.add_argument('--dep_ratio_weight', type=float, default=1,
+                             help='loss weight for depth ratio.')
     self.parser.add_argument('--dim_weight', type=float, default=1,
                              help='loss weight for 3d bounding box size.')
     self.parser.add_argument('--rot_weight', type=float, default=1,
@@ -347,6 +349,8 @@ class opts(object):
 
     if 'ddd' in opt.task:
       opt.heads.update({'dep': 1, 'rot': 8, 'dim': 3, 'amodel_offset': 2})
+    if 'dep_ratio' in opt.task:
+      opt.heads.update({'dep_ratio': 1})
     
     if 'multi_pose' in opt.task:
       opt.heads.update({
@@ -372,7 +376,8 @@ class opts(object):
                    'tracking': opt.tracking_weight,
                    'ltrb_amodal': opt.ltrb_amodal_weight,
                    'nuscenes_att': opt.nuscenes_att_weight,
-                   'velocity': opt.velocity_weight}
+                   'velocity': opt.velocity_weight,
+                   'dep_ratio': opt.dep_ratio_weight}
     opt.weights = {head: weight_dict[head] for head in opt.heads}
     for head in opt.weights:
       if opt.weights[head] == 0:

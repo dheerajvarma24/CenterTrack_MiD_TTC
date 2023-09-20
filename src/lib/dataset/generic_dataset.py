@@ -339,7 +339,7 @@ class GenericDataset(data.Dataset):
     regression_head_dims = {
       'reg': 2, 'wh': 2, 'tracking': 2, 'ltrb': 4, 'ltrb_amodal': 4, 
       'nuscenes_att': 8, 'velocity': 3, 'hps': self.num_joints * 2, 
-      'dep': 1, 'dim': 3, 'amodel_offset': 2}
+      'dep': 1, 'dim': 3, 'amodel_offset': 2, 'dep_ratio': 1}
 
     for head in regression_head_dims:
       if head in self.opt.heads:
@@ -426,6 +426,12 @@ class GenericDataset(data.Dataset):
     h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
     if h <= 0 or w <= 0:
       return
+    
+    # ignore those annotations where dep_ratio is NaN
+    '''if 'dep_ratio' in self.opt.heads and 'dep_ratio' in ann :
+      if np.isnan(ann['dep_ratio']) or ann['dep_ratio'] == 'NaN' or ann['dep_ratio'] == 'nan':
+        return'''
+    
     radius = gaussian_radius((math.ceil(h), math.ceil(w)))
     radius = max(0, int(radius)) 
     ct = np.array(
@@ -494,7 +500,15 @@ class GenericDataset(data.Dataset):
         ret['dep'][k] = ann['depth'] * aug_s
         gt_det['dep'].append(ret['dep'][k])
       else:
-        gt_det['dep'].append(2)
+        gt_det['dep'].append(2)  # TODO why 2 here
+    
+    if 'dep_ratio' in self.opt.heads:
+      if 'dep_ratio' in ann and not gt_det['dep_ratio'] == np.nan:
+        ret['dep_ratio_mask'][k] = 1
+        ret['dep_ratio'][k] = ann['dep_ratio'] * aug_s
+        gt_det['dep_ratio'].append(ret['dep_ratio'][k])
+      else: 
+        gt_det['dep_ratio'].append(1) # TODO dint understand 
 
     if 'dim' in self.opt.heads:
       if 'dim' in ann:

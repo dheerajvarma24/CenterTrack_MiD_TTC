@@ -52,7 +52,7 @@ class GenericLoss(torch.nn.Module):
       
       regression_heads = [
         'reg', 'wh', 'tracking', 'ltrb', 'ltrb_amodal', 'hps', 
-        'dep', 'dim', 'amodel_offset', 'velocity']
+        'dep', 'dim', 'amodel_offset', 'velocity', 'dep_ratio']
 
       for head in regression_heads:
         if head in output:
@@ -123,7 +123,7 @@ class Trainer(object):
   def run_epoch(self, phase, epoch, data_loader):
     model_with_loss = self.model_with_loss
     if phase == 'train':
-      model_with_loss.train()
+      model_with_loss.train() # set model to train mode
     else:
       if len(self.opt.gpus) > 1:
         model_with_loss = self.model_with_loss.module
@@ -183,7 +183,7 @@ class Trainer(object):
   def _get_losses(self, opt):
     loss_order = ['hm', 'wh', 'reg', 'ltrb', 'hps', 'hm_hp', \
       'hp_offset', 'dep', 'dim', 'rot', 'amodel_offset', \
-      'ltrb_amodal', 'tracking', 'nuscenes_att', 'velocity']
+      'ltrb_amodal', 'tracking', 'nuscenes_att', 'velocity', 'dep_ratio']
     loss_states = ['tot'] + [k for k in loss_order if k in opt.heads]
     loss = GenericLoss(opt)
     return loss_states, loss
