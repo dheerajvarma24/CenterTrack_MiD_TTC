@@ -98,6 +98,8 @@ class opts(object):
     self.parser.add_argument('--num_layers', type=int, default=101)
     self.parser.add_argument('--backbone', default='dla34')
     self.parser.add_argument('--neck', default='dlaup')
+    self.parser.add_argument('--headtype', default='conv_block',
+                             help = 'mlp_mixer | conv_block | rep_block')
     self.parser.add_argument('--msra_outchannel', type=int, default=256)
     self.parser.add_argument('--efficient_level', type=int, default=0)
     self.parser.add_argument('--prior_bias', type=float, default=-4.6) # -2.19
@@ -176,6 +178,7 @@ class opts(object):
                              help='different validation split for kitti: '
                                   '3dop | subcnn')
     self.parser.add_argument('--test_focal_length', type=int, default=-1)
+    self.parser.add_argument('--test_interval', type=int, default=-1)
 
     # dataset
     self.parser.add_argument('--not_rand_crop', action='store_true',
