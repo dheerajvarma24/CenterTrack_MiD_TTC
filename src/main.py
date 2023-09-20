@@ -38,6 +38,8 @@ def main(opt):
 
   print('Creating model...')
   model = create_model(opt.arch, opt.heads, opt.head_conv, opt=opt)
+  print('----------------model----------------')
+  print(model)
   optimizer = get_optimizer(opt, model)
   start_epoch = 0
   if opt.load_model != '':
@@ -72,6 +74,7 @@ def main(opt):
     for k, v in log_dict_train.items():
       logger.scalar_summary('train_{}'.format(k), v, epoch)
       logger.write('{} {:8f} | '.format(k, v))
+    # VAL is not working at the moment
     if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
       save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)), 
                  epoch, model, optimizer)
@@ -86,6 +89,18 @@ def main(opt):
       save_model(os.path.join(opt.save_dir, 'model_last.pth'), 
                  epoch, model, optimizer)
     logger.write('\n')
+    if opt.test_interval > 0 and epoch % opt.test_interval == 0:
+      print("python test run at epoch %d" %(epoch))
+      print('opt.save_dir',opt.save_dir)
+      print('opt.dataset',opt.dataset)
+      print('opt.headtype',opt.headtype)
+      
+      if opt.headtype:
+        os.system('python test.py tracking --exp_id %s/val_e%d --dataset %s --dataset_version val_half --pre_hm --track_thresh 0.4 --load_model %s/model_last.pth --headtype %s --save_results' %(opt.save_dir, epoch, opt.dataset, opt.save_dir, opt.headtype))
+      else:
+        os.system('python test.py tracking --exp_id %s/val_e%d --dataset %s --dataset_version val_half --pre_hm --track_thresh 0.4 --load_model %s/model_last.pth --save_results' %(opt.save_dir, epoch, opt.dataset, opt.save_dir))
+      
+
     if epoch in opt.save_point:
       save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)), 
                  epoch, model, optimizer)
