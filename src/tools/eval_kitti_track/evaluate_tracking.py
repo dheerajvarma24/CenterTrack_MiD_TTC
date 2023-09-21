@@ -276,6 +276,9 @@ class trackingEvaluation(object):
                         t_data.score = -1
                     elif len(fields) == 18:
                         t_data.score  = float(fields[17])     # detection score
+                    elif len(fields) == 19:
+                        #t_data.dep_ratio  = float(fields[18])     # dep_ratio value
+                        pass
                     else:
                         self.mail.msg("file is not in KITTI format")
                         return
