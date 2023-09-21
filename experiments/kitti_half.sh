@@ -6,9 +6,8 @@ python test.py tracking --exp_id kitti_half --dataset kitti_tracking --dataset_v
 
 
 # dep ratio head train
-python main.py ddd,dep_ratio --exp_id kitti_half --dataset kitti_tracking --dataset_version train_MiD --batch_size 16 --gpus 0,1
+python main.py tracking,dep_ratio --exp_id kitti_half --dataset kitti_tracking --dataset_version train_MiD --batch_size 16 --gpus 0,1 --load_model ../models/nuScenes_3Ddetection_e140.pth --test_interval 5
 
 
-python test.py ddd,tracking,dep_ratio --exp_id kitti_half --dataset kitti_tracking --dataset_version val_MiD --gpus 0 --load_model todo_take_above_model
-
-
+ #having tracking in test will save the results in the kitti format
+python test.py ddd,tracking,dep_ratio --exp_id kitti_half --dataset kitti_tracking --dataset_version val_MiD --gpus 0 --load_modeltodo_take_above_model

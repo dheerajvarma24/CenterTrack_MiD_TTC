@@ -86,6 +86,16 @@ def main(opt):
       save_model(os.path.join(opt.save_dir, 'model_last.pth'), 
                  epoch, model, optimizer)
     logger.write('\n')
+    if opt.test_interval > 0 and epoch % opt.test_interval == 0:
+      print("python test run at epoch %d" %(epoch))
+      print('opt.save_dir',opt.save_dir)
+      print('opt.dataset',opt.dataset)
+      print('opt.headtype',opt.headtype)
+
+      if opt.headtype:
+        os.system('python test.py ddd,dep_ratio --exp_id %s/val_e%d --dataset %s --dataset_version val_MiD --gpus 0 --load_model %s/model_last.pth --headtype %s --save_results' %(opt.save_dir, epoch, opt.dataset, opt.save_dir, opt.headtype))
+      else:
+        os.system('python test.py ddd,dep_ratio --exp_id %s/val_e%d --dataset %s --dataset_version val_MiD --gpus 0 --load_model %s/model_last.pth --save_results' %(opt.save_dir, epoch, opt.dataset, opt.save_dir))
     if epoch in opt.save_point:
       save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)), 
                  epoch, model, optimizer)
